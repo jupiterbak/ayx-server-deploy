@@ -1,0 +1,46 @@
+name: 'AYX Test Reporter'
+description: |
+  Execute tests(worflows) of a collection on a remote server and shows test results in GitHub UI.
+author: Jupiter Bakakeu <jupiter.bakakeu@gmail.com>, <jupiter.bakakeu@alteryx.com>
+inputs:
+  ayx-server-api-url: 
+    required: true
+    description: 'alteryx server rest api url'
+    default: 'http://ec2-3-66-136-169.eu-central-1.compute.amazonaws.com/webapi/'
+  ayx-server-client-id: 
+    required: true
+    description: 'alteryx server client ID'
+    default: '8DA78CE09C0E5D1abf4927846637f9a02e196b8eff52b61f03246ad16ad2c81125ef4a80920db80'
+  ayx-server-client-secret: 
+    required: true
+    description: 'alteryx server client secret'
+    default: '1f675a0f8d2c572ddd02005a3396fe7e89706fe4a39e0d5f39cf9b6463aecec8'
+  collection-to-test: 
+    required: true
+    description: 'collection containing all the tests as workflows'
+  args:
+    required: true
+    description: JSON-Object arguments
+    default: '[{"name": "Bucket Name","value": "ayx-ml-ops-demo"},{"name": "Object Name","value": "00_data_ingestion/data/Data_In.csv"}]'
+outputs:
+  conclusion:
+    description: |
+      Final conclusion of the created check run:
+        - 'success' if no failed tests was found
+        - 'failure' if any failed test was found
+  passed:
+    description: Count of passed tests
+  failed:
+    description: Count of failed tests
+  skipped:
+    description: Count of skipped tests
+  time:
+    description: Test execution time [ms]
+  test-report-file:
+    description: Generate complete path of the test report as mocha json
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
+branding:
+  color: orange
+  icon: check-square
