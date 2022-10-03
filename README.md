@@ -31,11 +31,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2     # checkout the repo
       - name: Test Report
-        uses: jupiterbak/ayx-server-deploy@v1.0.1
+        uses: jupiterbak/ayx-server-deploy@v1
         with:
           ayx-server-api-url: 'http://localhost/webapi/'
           ayx-server-client-id: '8DA78CE09C0E5D1abf4927846637f9a02e196b8eff52b61f03246ad16ad2c81125ef4a80920db80'
           ayx-server-client-secret: '1f675a0f8d2c572ddd02005a3396fe7e89706fe4a39e0d5f39cf9b6463aecec8'
+          ayx-user-mail: 'jupiter.bakakeu@gmail.com'
           folder-to-sync: './DATA/'
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v2.2.3
@@ -52,7 +53,7 @@ jobs:
 ## Usage
 
 ```yaml
-- uses: jupiterbak/ayx-server-deploy@v1.0.1
+- uses: jupiterbak/ayx-server-deploy@v1
   with:
     # URL of the Alteryx server API.
     ayx-server-api-url: 'http://loxcalhost/webapi/'
@@ -65,19 +66,17 @@ jobs:
     # Reference to the help to get the credentials https://help.alteryx.com/developer-help/server-api-overview
     ayx-server-client-secret: '1f67...3aecec8'
 
-    # Alteryx Server Collection to test
-    collection-to-test: '00_Data_Ingestion'
+    # ALteryx user mail
+    user-mail: 'jupiter.bakakeu@gmail.com'
+    
+    # Folder to sync
+    folder-to-sync: './DATA/'
 ```
 
 ## Output parameters
 | Name       | Description              |
 | :--        | :--                      |
 | conclusion | `success` or `failure`   |
-| passed     | Count of passed tests    |
-| failed     | Count of failed tests    |
-| skipped    | Count of skipped tests   |
-| time       | Test execution time [ms] |
-| test-report-file    | Gnerated test report file in mocha-json   |
 
 
 ## License
