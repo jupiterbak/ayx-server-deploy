@@ -1,6 +1,6 @@
-name: 'AYX Test Reporter'
+name: 'AYX Server Sync'
 description: |
-  Execute tests(worflows) of a collection on a remote server and shows test results in GitHub UI.
+  Sync a GitHub Repository with an Alteryx Server.
 author: Jupiter Bakakeu <jupiter.bakakeu@gmail.com>, <jupiter.bakakeu@alteryx.com>
 inputs:
   ayx-server-api-url: 
@@ -15,29 +15,21 @@ inputs:
     required: true
     description: 'alteryx server client secret'
     default: '1f675a0f8d2c572ddd02005a3396fe7e89706fe4a39e0d5f39cf9b6463aecec8'
-  collection-to-test: 
+  ayx-user-mail: 
     required: true
-    description: 'collection containing all the tests as workflows'
-  args:
+    description: 'alteryx user mail'
+    default: 'jupiter.bakakeu@alteryx.com'
+  folder-to-sync: 
     required: true
-    description: JSON-Object arguments
-    default: '[{"name": "Bucket Name","value": "ayx-ml-ops-demo"},{"name": "Object Name","value": "00_data_ingestion/data/Data_In.csv"}]'
+    description: 'path of the repository folder to sync'
 outputs:
   conclusion:
     description: |
       Final conclusion of the created check run:
-        - 'success' if no failed tests was found
-        - 'failure' if any failed test was found
-  passed:
-    description: Count of passed tests
-  failed:
-    description: Count of failed tests
-  skipped:
-    description: Count of skipped tests
-  time:
-    description: Test execution time [ms]
+        - 'success' if no failed export happened
+        - 'failure' if any failed export happened
   test-report-file:
-    description: Generate complete path of the test report as mocha json
+    description: Generated export report
 runs:
   using: 'node16'
   main: 'dist/index.js'

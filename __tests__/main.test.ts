@@ -23,8 +23,8 @@ test('wait 500 ms', async () => {
 //   const url = 'http://ec2-3-66-136-169.eu-central-1.compute.amazonaws.com/webapi/';
 //   const clientId = '8DA78CE09C0E5D1abf4927846637f9a02e196b8eff52b61f03246ad16ad2c81125ef4a80920db80';
 //   const clientSecret = '1f675a0f8d2c572ddd02005a3396fe7e89706fe4a39e0d5f39cf9b6463aecec8';
-//   const collectionName = '00_Data_Ingestion'
-//   const args = '[{"name": "Bucket Name","value": "ayx-ml-ops-demo"},{"name": "Object Name","value": "00_data_ingestion/data/Data_In.csv"}]'
+//   const user_mail: string = 'jupiter.bakakeu@alteryx.com'
+//   const folder_to_sync: string = 'C:/DATA/00_Workspace/Github/AYX_DEVOPS_DEMO'
 
 //   const sdk = new AlteryxSdk({
 //     gateway: url,
@@ -34,19 +34,26 @@ test('wait 500 ms', async () => {
 //   const wClient = sdk.GetWorkflowManagementClient()
 //   const cClient = sdk.GetCollectionManagementClient()
 //   const jClient = sdk.GetJobManagementClient()
+//   const userClient = sdk.GetUserManagementClient()
 
-//   const rslt = await main(cClient, wClient, jClient, collectionName, args)
+//   const rslt = await main(
+//     cClient,
+//     wClient,
+//     jClient,
+//     userClient,
+//     user_mail,
+//     folder_to_sync
+//   )
 
 // }, 500000)
 
-// shows how the runner will run a javascript action with env / stdout protocol
+//shows how the runner will run a javascript action with env / stdout protocol
 test('test runs', () => {
   process.env['INPUT_MILLISECONDS'] = '500'
   process.env['INPUT_AYX-SERVER-API-URL'] = 'http://ec2-3-66-136-169.eu-central-1.compute.amazonaws.com/webapi/'
   process.env['INPUT_AYX-SERVER-CLIENT-ID'] = '8DA78CE09C0E5D1abf4927846637f9a02e196b8eff52b61f03246ad16ad2c81125ef4a80920db80'
   process.env['INPUT_AYX-SERVER-CLIENT-SECRET'] = '1f675a0f8d2c572ddd02005a3396fe7e89706fe4a39e0d5f39cf9b6463aecec8'
-  process.env['INPUT_AYX-COLLECTION-TO-TEST'] = '00_Data_Ingestion'  
-  process.env['INPUT_ARGS'] = '[{"name": "Bucket Name","value": "0ayx-ml-ops-demo"},{"name": "Object Name","value": "00_data_ingestion/data/Data_In.csv"}]'
+  process.env['INPUT_FOLDER-TO-SYNC'] = 'C:/DATA/00_Workspace/Github/AYX_DEVOPS_DEMO'
   
   const np = process.execPath
   const ip = path.join(__dirname, '..', 'lib', 'main.js')

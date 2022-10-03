@@ -19,8 +19,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.main = exports.wait = void 0;
-const tryer_1 = __importDefault(__nccwpck_require__(8683));
+exports.main = exports.getAllFiles = exports.wait = void 0;
+const ayx_node_1 = __nccwpck_require__(7517);
+//import tryer from 'tryer'
+const fs_1 = __importDefault(__nccwpck_require__(7147));
+const path_1 = __importDefault(__nccwpck_require__(1017));
 function wait(milliseconds) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise(resolve => {
@@ -32,65 +35,194 @@ function wait(milliseconds) {
     });
 }
 exports.wait = wait;
-function main(cClient, wClient, jClient, collectionName, args) {
+function getAllFiles(dirPath, arrayOfFiles) {
+    const files = fs_1.default.readdirSync(dirPath).filter(value => !value.startsWith('.'));
+    arrayOfFiles = arrayOfFiles || [];
+    // eslint-disable-next-line github/array-foreach
+    files.forEach(file => {
+        if (fs_1.default.statSync(`${dirPath}/${file}`).isDirectory()) {
+            arrayOfFiles = getAllFiles(`${dirPath}/${file}`, arrayOfFiles);
+        }
+        else {
+            arrayOfFiles.push(path_1.default.join(dirPath, '/', file));
+        }
+    });
+    return arrayOfFiles;
+}
+exports.getAllFiles = getAllFiles;
+function main(cClient, wClient, jClient, userClient, userMail, folderToSync) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
-            // list and filter the collectionc by name
-            const collectionIds = (yield cClient.GetCollections('Full'))
-                .filter(x => {
-                let _a;
-                return (_a = x.name) === null || _a === void 0
-                    ? void 0
-                    : _a.startsWith(collectionName);
-            })
-                .map(col => {
-                return col.id;
-            })
-                .flat();
-            // Get all the workflows
-            const collections = yield Promise.all(collectionIds.map((col_id) => __awaiter(this, void 0, void 0, function* () {
-                const col = yield cClient.GetCollection(col_id);
-                return col;
-            })));
-            // get the workflow Ids to post a new Job
-            const workflowIds = collections
-                .map(col => {
-                return col.workflowIds;
-            })
-                .flat();
-            // get the workflows informations
-            const workflows = yield Promise.all(workflowIds.map((wId) => __awaiter(this, void 0, void 0, function* () {
-                const workflow = yield wClient.GetWorkflow(String(wId));
-                return workflow;
-            })));
-            // Post new Jobs
-            const questions = JSON.parse(args);
-            const jobs = yield Promise.all(workflowIds.map((workflow) => __awaiter(this, void 0, void 0, function* () {
-                const job = yield wClient.PostNewJobV1(String(workflow), {
-                    questions
-                });
-                return job;
-            })));
-            let completed = false;
-            let statuses = [];
-            (0, tryer_1.default)({
-                action: (done) => __awaiter(this, void 0, void 0, function* () {
-                    statuses = yield Promise.all(jobs.map((job) => __awaiter(this, void 0, void 0, function* () {
-                        const status = yield jClient.GetJobDetailsV1(String(job.id));
-                        return status;
-                    })));
-                    const unfinished_jobs = statuses.filter(val => val.status === 'Queued' || val.status === 'Running');
-                    completed = unfinished_jobs.length === 0;
-                    done();
-                }),
-                until: () => completed,
-                pass: () => __awaiter(this, void 0, void 0, function* () {
-                    resolve({ workflows, statuses });
-                }),
-                interval: 10000,
-                limit: -1
-            });
+            // list all collections
+            const collections = yield cClient.GetCollections('Full');
+            // Get a target user
+            const users = yield userClient.GetUsers({ email: userMail });
+            const targetUser = users[0];
+            const dirAbsolutePath = path_1.default.resolve(folderToSync);
+            if (!fs_1.default.existsSync(dirAbsolutePath)) {
+                return {
+                    collection: [],
+                    workflows: []
+                };
+            }
+            const _files = fs_1.default
+                .readdirSync(folderToSync)
+                .filter(value => !value.startsWith('.'));
+            _files.map((file) => __awaiter(this, void 0, void 0, function* () {
+                if (fs_1.default.statSync(`${folderToSync}/${file}`).isDirectory()) {
+                    // Check if corresponding collection to the folder exists
+                    const target_collections = collections
+                        .filter(x => {
+                        let _a;
+                        return (_a = x.name) === null || _a === void 0
+                            ? void 0
+                            : _a.startsWith(file);
+                    })
+                        .flat();
+                    let target_collection;
+                    if (target_collections.length === 0) {
+                        // Corresponding collection do not exist. Create it
+                        const createdCollectionId = yield cClient.CreateCollection({
+                            name: file
+                        });
+                        target_collection = yield cClient.GetCollection(createdCollectionId);
+                    }
+                    else {
+                        target_collection = yield cClient.GetCollection(target_collections[0].id);
+                    }
+                    // Get all the workflows in this folder and its subfolders
+                    const arrayOfWorkflowPackages = getAllFiles(`${folderToSync}/${file}`, []).filter(x => x === null || x === void 0 ? void 0 : x.endsWith('.yxzp'));
+                    // Get all the macros in this folder and its subfolders
+                    // const arrayOfMacrosPackages = getAllFiles(
+                    //   `${folderToSync}/${file}`,
+                    //   []
+                    // ).filter(x =>
+                    //   x === null || x === void 0 ? void 0 : x.endsWith('.yxmc')
+                    // )
+                    // For each workflows/app check if workflow exists
+                    arrayOfWorkflowPackages.map((w) => __awaiter(this, void 0, void 0, function* () {
+                        var _b;
+                        const workflowName = path_1.default.basename(w);
+                        const _workflows = yield wClient.GetWorkflows({ name: workflowName });
+                        let _workflow;
+                        if (_workflows.length === 0) {
+                            // Workflow do not exist, create a new one
+                            const dummyWorkflowFileBuffer = fs_1.default.readFileSync(w, {
+                                flag: 'r',
+                                encoding: null
+                            });
+                            const createdWorkflowId = yield wClient.CreateWorkflow({
+                                file: Buffer.from(dummyWorkflowFileBuffer),
+                                name: `${workflowName}`,
+                                ownerId: targetUser.id,
+                                isPublic: true,
+                                isReadyForMigration: true,
+                                othersMayDownload: true,
+                                othersCanExecute: true,
+                                executionMode: ayx_node_1.SDKModels.UpdateWorkflowContract.ExecutionModeEnum.Standard.toString(),
+                                comments: 'uploaded by github action ayx-server-deploy'
+                            });
+                            // Read newly created workflow
+                            _workflow = yield wClient.GetWorkflow(createdWorkflowId);
+                        }
+                        else {
+                            // Workflow already exists, create a new version
+                            const updatedWorkflow = _workflows[0];
+                            // Create new Version
+                            _workflow = yield wClient.AddVersionToWorkflow(updatedWorkflow.id, {
+                                name: updatedWorkflow.name,
+                                ownerId: updatedWorkflow.ownerId,
+                                othersMayDownload: true,
+                                othersCanExecute: true,
+                                makePublished: true,
+                                executionMode: updatedWorkflow.executionMode
+                                    ? updatedWorkflow.executionMode.toString()
+                                    : ayx_node_1.SDKModels.WorkflowView.ExecutionModeEnum.Standard.toString()
+                            });
+                        }
+                        // Check that workflow is add into collection
+                        const wContaineds = (_b = target_collection.workflowIds) === null || _b === void 0 ? void 0 : _b.filter(col => col === _workflow.id);
+                        if ((wContaineds === null || wContaineds === void 0 ? void 0 : wContaineds.length) === 0) {
+                            // workflow do not exists in collection, add it
+                            yield cClient.AddWorkflowToCollection(target_collection.id, {
+                                workflowId: _workflow.id
+                            });
+                        }
+                        resolve({
+                            collection: [],
+                            workflows: []
+                        });
+                    }));
+                }
+            }));
         }));
+        // return new Promise(async resolve => {
+        //   // list and filter the collectionc by name
+        //   const collectionIds = (await cClient.GetCollections('Full'))
+        //     .filter(x => {
+        //       let _a
+        //       return (_a = x.name) === null || _a === void 0
+        //         ? void 0
+        //         : _a.startsWith(collectionName)
+        //     })
+        //     .map(col => {
+        //       return col.id
+        //     })
+        //     .flat()
+        //   // Get all the workflows
+        //   const collections = await Promise.all(
+        //     collectionIds.map(async col_id => {
+        //       const col = await cClient.GetCollection(col_id)
+        //       return col
+        //     })
+        //   )
+        //   // get the workflow Ids to post a new Job
+        //   const workflowIds = collections
+        //     .map(col => {
+        //       return col.workflowIds
+        //     })
+        //     .flat()
+        //   // get the workflows informations
+        //   const workflows: SDKModels.WorkflowView[] = await Promise.all(
+        //     workflowIds.map(async wId => {
+        //       const workflow = await wClient.GetWorkflow(String(wId))
+        //       return workflow
+        //     })
+        //   )
+        //   // Post new Jobs
+        //   const questions = JSON.parse(args)
+        //   const jobs = await Promise.all(
+        //     workflowIds.map(async workflow => {
+        //       const job = await wClient.PostNewJobV1(String(workflow), {
+        //         questions
+        //       })
+        //       return job
+        //     })
+        //   )
+        //   let completed = false
+        //   let statuses: SDKModelsV1.JobApiView[] = []
+        //   tryer({
+        //     action: async (done: () => void) => {
+        //       statuses = await Promise.all(
+        //         jobs.map(async job => {
+        //           const status = await jClient.GetJobDetailsV1(String(job.id))
+        //           return status
+        //         })
+        //       )
+        //       const unfinished_jobs = statuses.filter(
+        //         val => val.status === 'Queued' || val.status === 'Running'
+        //       )
+        //       completed = unfinished_jobs.length === 0
+        //       done()
+        //     },
+        //     until: () => completed,
+        //     pass: async () => {
+        //       resolve({workflows, statuses})
+        //     },
+        //     interval: 10000,
+        //     limit: -1
+        //   })
+        // })
     });
 }
 exports.main = main;
@@ -150,11 +282,13 @@ function run() {
             const url = core.getInput('ayx-server-api-url');
             const clientId = core.getInput('ayx-server-client-id');
             const clientSecret = core.getInput('ayx-server-client-secret');
-            const collectionName = core.getInput('collection-to-test');
-            const args = core.getInput('args');
-            const testReportFile = 'results.json';
+            const user_mail = core.getInput('ayx-user-mail');
+            const folder_to_sync = core.getInput('folder-to-sync');
+            const testReportFile = 'server-sync-results.json';
             // read test start time
             const startTime = Date.now();
+            // eslint-disable-next-line no-console
+            console.log(`Starting at ${startTime}`);
             // Instantiate the clients
             // Instantiate the library
             const sdk = new ayx_node_1.AlteryxSdk({
@@ -165,122 +299,132 @@ function run() {
             const wClient = sdk.GetWorkflowManagementClient();
             const cClient = sdk.GetCollectionManagementClient();
             const jClient = sdk.GetJobManagementClient();
-            const rslt = yield (0, common_1.main)(cClient, wClient, jClient, collectionName, args);
-            // Get Endtime
-            const endTime = Date.now();
-            // create test report
-            const tests = rslt.statuses.map((status, i) => {
-                var _a;
-                return {
-                    title: rslt.workflows[i].name,
-                    fullTitle: rslt.workflows[i].name,
-                    file: rslt.workflows[i].name,
-                    duration: 0,
-                    currentRetry: 0,
-                    speed: 'fast',
-                    err: {},
-                    createDate: status.createDate,
-                    disposition: status.disposition,
-                    status: status.status,
-                    name: rslt.workflows[i].name,
-                    job: status.id,
-                    runWithE2: status.runWithE2,
-                    outputCount: (_a = status.outputs) === null || _a === void 0 ? void 0 : _a.length
-                };
-            });
-            const passes = rslt.statuses
-                .filter(status => status.disposition === 'Success')
-                .map((status, i) => {
-                var _a;
-                return {
-                    title: rslt.workflows[i].name,
-                    fullTitle: rslt.workflows[i].name,
-                    file: rslt.workflows[i].name,
-                    duration: 0,
-                    currentRetry: 0,
-                    speed: 'fast',
-                    err: {},
-                    createDate: status.createDate,
-                    disposition: status.disposition,
-                    status: status.status,
-                    name: rslt.workflows[i].name,
-                    job: status.id,
-                    runWithE2: status.runWithE2,
-                    outputCount: (_a = status.outputs) === null || _a === void 0 ? void 0 : _a.length
-                };
-            });
-            const failures = rslt.statuses
-                .filter(status => status.disposition !== 'Success')
-                .map((status, i) => {
-                var _a;
-                return {
-                    title: rslt.workflows[i].name,
-                    fullTitle: rslt.workflows[i].name,
-                    file: rslt.workflows[i].name,
-                    duration: 0,
-                    currentRetry: 0,
-                    speed: 'fast',
-                    err: {},
-                    createDate: status.createDate,
-                    disposition: status.disposition,
-                    status: status.status,
-                    name: rslt.workflows[i].name,
-                    job: status.id,
-                    runWithE2: status.runWithE2,
-                    outputCount: (_a = status.outputs) === null || _a === void 0 ? void 0 : _a.length
-                };
-            });
-            const pending = rslt.statuses
-                .filter(status => status.disposition === 'Running' || status.disposition === 'Queued')
-                .map((status, i) => {
-                var _a;
-                return {
-                    title: rslt.workflows[i].name,
-                    fullTitle: rslt.workflows[i].name,
-                    file: rslt.workflows[i].name,
-                    duration: 0,
-                    currentRetry: 0,
-                    speed: 'fast',
-                    err: {},
-                    createDate: status.createDate,
-                    disposition: status.disposition,
-                    status: status.status,
-                    name: rslt.workflows[i].name,
-                    job: status.id,
-                    runWithE2: status.runWithE2,
-                    outputCount: (_a = status.outputs) === null || _a === void 0 ? void 0 : _a.length
-                };
-            });
-            const test_result = {
-                stats: {
-                    suites: 1,
-                    tests: rslt.workflows.length,
-                    passes: rslt.statuses.filter(status => status.disposition === 'Success')
-                        .length,
-                    pending: rslt.statuses.filter(status => status.disposition === 'Running' || status.disposition === 'Queued').length,
-                    failures: rslt.statuses.filter(status => status.disposition !== 'Success').length,
-                    start: rslt.statuses.reduce((p, c) => {
-                        return new Date(c.createDate) > new Date(p.createDate) ? p : c;
-                    }).createDate,
-                    end: rslt.statuses.reduce((p, c) => {
-                        return new Date(c.createDate) > new Date(p.createDate) ? c : p;
-                    }).createDate,
-                    duration: 0
-                },
-                tests,
-                pending,
-                failures,
-                passes
-            };
+            const userClient = sdk.GetUserManagementClient();
+            const rslt = yield (0, common_1.main)(cClient, wClient, jClient, userClient, user_mail, folder_to_sync);
             // Write results to file
-            fs_1.default.writeFileSync(testReportFile, JSON.stringify(test_result, null, 4));
-            // Generate the outputs
-            core.setOutput('time', endTime - startTime);
-            core.setOutput('passed', passes.length);
-            core.setOutput('failed', failures.length);
-            core.setOutput('skipped', pending.length);
-            core.setOutput('test-report-file', testReportFile);
-            core.setOutput('conclusion', failures.length === 0 && pending.length === 0 ? 'success' : 'failure');
+            fs_1.default.writeFileSync(testReportFile, JSON.stringify(rslt, null, 4));
+            // // Get Endtime
+            // const endTime = Date.now()
+            // // create test report
+            // const tests = rslt.statuses.map((status, i) => {
+            //   return {
+            //     title: rslt.workflows[i].name,
+            //     fullTitle: rslt.workflows[i].name,
+            //     file: rslt.workflows[i].name,
+            //     duration: 0,
+            //     currentRetry: 0,
+            //     speed: 'fast',
+            //     err: {},
+            //     createDate: status.createDate,
+            //     disposition: status.disposition,
+            //     status: status.status,
+            //     name: rslt.workflows[i].name,
+            //     job: status.id,
+            //     runWithE2: status.runWithE2,
+            //     outputCount: status.outputs?.length
+            //   }
+            // })
+            // const passes = rslt.statuses
+            //   .filter(status => status.disposition === 'Success')
+            //   .map((status, i) => {
+            //     return {
+            //       title: rslt.workflows[i].name,
+            //       fullTitle: rslt.workflows[i].name,
+            //       file: rslt.workflows[i].name,
+            //       duration: 0,
+            //       currentRetry: 0,
+            //       speed: 'fast',
+            //       err: {},
+            //       createDate: status.createDate,
+            //       disposition: status.disposition,
+            //       status: status.status,
+            //       name: rslt.workflows[i].name,
+            //       job: status.id,
+            //       runWithE2: status.runWithE2,
+            //       outputCount: status.outputs?.length
+            //     }
+            //   })
+            // const failures = rslt.statuses
+            //   .filter(status => status.disposition !== 'Success')
+            //   .map((status, i) => {
+            //     return {
+            //       title: rslt.workflows[i].name,
+            //       fullTitle: rslt.workflows[i].name,
+            //       file: rslt.workflows[i].name,
+            //       duration: 0,
+            //       currentRetry: 0,
+            //       speed: 'fast',
+            //       err: {},
+            //       createDate: status.createDate,
+            //       disposition: status.disposition,
+            //       status: status.status,
+            //       name: rslt.workflows[i].name,
+            //       job: status.id,
+            //       runWithE2: status.runWithE2,
+            //       outputCount: status.outputs?.length
+            //     }
+            //   })
+            // const pending = rslt.statuses
+            //   .filter(
+            //     status =>
+            //       status.disposition === 'Running' || status.disposition === 'Queued'
+            //   )
+            //   .map((status, i) => {
+            //     return {
+            //       title: rslt.workflows[i].name,
+            //       fullTitle: rslt.workflows[i].name,
+            //       file: rslt.workflows[i].name,
+            //       duration: 0,
+            //       currentRetry: 0,
+            //       speed: 'fast',
+            //       err: {},
+            //       createDate: status.createDate,
+            //       disposition: status.disposition,
+            //       status: status.status,
+            //       name: rslt.workflows[i].name,
+            //       job: status.id,
+            //       runWithE2: status.runWithE2,
+            //       outputCount: status.outputs?.length
+            //     }
+            //   })
+            // const test_result = {
+            //   stats: {
+            //     suites: 1,
+            //     tests: rslt.workflows.length,
+            //     passes: rslt.statuses.filter(status => status.disposition === 'Success')
+            //       .length,
+            //     pending: rslt.statuses.filter(
+            //       status =>
+            //         status.disposition === 'Running' || status.disposition === 'Queued'
+            //     ).length,
+            //     failures: rslt.statuses.filter(
+            //       status => status.disposition !== 'Success'
+            //     ).length,
+            //     start: rslt.statuses.reduce((p, c) => {
+            //       return new Date(c.createDate!) > new Date(p.createDate!) ? p : c
+            //     }).createDate,
+            //     end: rslt.statuses.reduce((p, c) => {
+            //       return new Date(c.createDate!) > new Date(p.createDate!) ? c : p
+            //     }).createDate,
+            //     duration: 0
+            //   },
+            //   tests,
+            //   pending,
+            //   failures,
+            //   passes
+            // }
+            // // Write results to file
+            // fs.writeFileSync(testReportFile, JSON.stringify(test_result, null, 4))
+            // // Generate the outputs
+            // core.setOutput('time', endTime - startTime)
+            // core.setOutput('passed', passes.length)
+            // core.setOutput('failed', failures.length)
+            // core.setOutput('skipped', pending.length)
+            // core.setOutput('test-report-file', testReportFile)
+            // core.setOutput(
+            //   'conclusion',
+            //   failures.length === 0 && pending.length === 0 ? 'success' : 'failure'
+            // )
         }
         catch (error) {
             if (error instanceof Error)
@@ -12189,224 +12333,6 @@ module.exports.PROCESSING_OPTIONS = PROCESSING_OPTIONS;
 
 /***/ }),
 
-/***/ 8683:
-/***/ (function(module, __unused_webpack_exports, __nccwpck_require__) {
-
-/* module decorator */ module = __nccwpck_require__.nmd(module);
-// Conditional and repeated task invocation for node and browser.
-
-/*globals setTimeout, define, module */
-
-(function (globals) {
-  'use strict';
-
-  if (typeof define === 'function' && define.amd) {
-    define(function () {
-      return tryer;
-    });
-  } else if ( true && module !== null) {
-    module.exports = tryer;
-  } else {
-    globals.tryer = tryer;
-  }
-
-  // Public function `tryer`.
-  //
-  // Performs some action when pre-requisite conditions are met and/or until
-  // post-requisite conditions are satisfied.
-  //
-  // @option action {function} The function that you want to invoke. Defaults to `() => {}`.
-  //                           If `action` returns a promise, iterations will not end until
-  //                           the promise is resolved or rejected. Alternatively, `action`
-  //                           may take a callback argument, `done`, to signal that it is
-  //                           asynchronous. In that case, you are responsible for calling
-  //                           `done` when the action is finished.
-  //
-  // @option when {function}   Predicate used to test pre-conditions. Should return `false`
-  //                           to postpone `action` or `true` to perform it. Defaults to
-  //                           `() => true`.
-  //
-  // @option until {function}  Predicate used to test post-conditions. Should return `false`
-  //                           to retry `action` or `true` to terminate it. Defaults to
-  //                           `() => true`.
-  //
-  // @option fail {function}   Callback to be invoked if `limit` tries are reached. Defaults
-  //                           to `() => {}`.
-  //
-  // @option pass {function}   Callback to be invoked after `until` has returned truthily.
-  //                           Defaults to `() => {}`.
-  //
-  // @option interval {number} Retry interval in milliseconds. A negative number indicates
-  //                           that subsequent retries should wait for double the interval
-  //                           from the preceding iteration (exponential backoff). Defaults
-  //                           to -1000.
-  //
-  // @option limit {number}    Maximum retry count, at which point the call fails and retries
-  //                           will cease. A negative number indicates that retries should
-  //                           continue indefinitely. Defaults to -1.
-  //
-  // @example
-  //   tryer({
-  //     when: () => db.isConnected,
-  //     action: () => db.insert(user),
-  //     fail () {
-  //       log.error('No database connection, terminating.');
-  //       process.exit(1);
-  //     },
-  //     interval: 1000,
-  //     limit: 10
-  //   });
-  //
-  // @example
-  //   let sent = false;
-  //   tryer({
-  //     until: () => sent,
-  //     action: done => {
-  //       smtp.send(email, error => {
-  //         if (! error) {
-  //           sent = true;
-  //         }
-  //         done();
-  //       });
-  //     },
-  //     pass: next,
-  //     interval: -1000,
-  //     limit: -1
-  //   });
-  function tryer (options) {
-    options = normaliseOptions(options);
-
-    iterateWhen();
-
-    function iterateWhen () {
-      if (preRecur()) {
-        iterateUntil();
-      }
-    }
-
-    function preRecur () {
-      return conditionallyRecur('when', iterateWhen);
-    }
-
-    function conditionallyRecur (predicateKey, iterate) {
-      if (! options[predicateKey]()) {
-        incrementCount(options);
-
-        if (shouldFail(options)) {
-          options.fail();
-        }  else {
-          recur(iterate, postIncrementInterval(options));
-        }
-
-        return false;
-      }
-
-      return true;
-    }
-
-    function iterateUntil () {
-      var result;
-
-      if (isActionSynchronous(options)) {
-        result = options.action();
-
-        if (result && isFunction(result.then)) {
-          return result.then(postRecur, postRecur);
-        }
-
-        return postRecur();
-      }
-
-      options.action(postRecur);
-    }
-
-    function postRecur () {
-      if (conditionallyRecur('until', iterateUntil)) {
-        options.pass();
-      }
-    }
-  }
-
-  function normaliseOptions (options) {
-    options = options || {};
-    return {
-      count: 0,
-      when: normalisePredicate(options.when),
-      until: normalisePredicate(options.until),
-      action: normaliseFunction(options.action),
-      fail: normaliseFunction(options.fail),
-      pass: normaliseFunction(options.pass),
-      interval: normaliseNumber(options.interval, -1000),
-      limit: normaliseNumber(options.limit, -1)
-    };
-  }
-
-  function normalisePredicate (fn) {
-    return normalise(fn, isFunction, yes);
-  }
-
-  function isFunction (fn) {
-    return typeof fn === 'function';
-  }
-
-  function yes () {
-    return true;
-  }
-
-  function normaliseFunction (fn) {
-    return normalise(fn, isFunction, nop);
-  }
-
-  function nop () {
-  }
-
-  function normalise (thing, predicate, defaultValue) {
-    if (predicate(thing)) {
-      return thing;
-    }
-
-    return defaultValue;
-  }
-
-  function normaliseNumber (number, defaultNumber) {
-    return normalise(number, isNumber, defaultNumber);
-  }
-
-  function isNumber (number) {
-    return typeof number === 'number' && number === number;
-  }
-
-  function isActionSynchronous (options) {
-    return options.action.length === 0;
-  }
-
-  function incrementCount (options) {
-    options.count += 1;
-  }
-
-  function shouldFail (options) {
-    return options.limit >= 0 && options.count >= options.limit;
-  }
-
-  function postIncrementInterval (options) {
-    var currentInterval = options.interval;
-
-    if (options.interval < 0) {
-      options.interval *= 2;
-    }
-
-    return currentInterval;
-  }
-
-  function recur (fn, interval) {
-    setTimeout(fn, Math.abs(interval));
-  }
-}(this));
-
-
-
-/***/ }),
-
 /***/ 4294:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -15460,8 +15386,8 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			id: moduleId,
-/******/ 			loaded: false,
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
 /******/ 			exports: {}
 /******/ 		};
 /******/ 	
@@ -15474,23 +15400,11 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 			if(threw) delete __webpack_module_cache__[moduleId];
 /******/ 		}
 /******/ 	
-/******/ 		// Flag the module as loaded
-/******/ 		module.loaded = true;
-/******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/node module decorator */
-/******/ 	(() => {
-/******/ 		__nccwpck_require__.nmd = (module) => {
-/******/ 			module.paths = [];
-/******/ 			if (!module.children) module.children = [];
-/******/ 			return module;
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";

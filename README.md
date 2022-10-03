@@ -1,24 +1,18 @@
-# Alteryx Test Reporter
+# Alteryx Server Sync
   
-[![build-test](https://github.com/jupiterbak/ayx-test-reporter/actions/workflows/test.yml/badge.svg)](https://github.com/jupiterbak/ayx-test-reporter/actions/workflows/test.yml)  [![The MIT License](https://img.shields.io/github/license/jupiterbak/ayx-node)](./LICENSE) [![Total alerts](https://img.shields.io/lgtm/alerts/g/jupiterbak/ayx-node.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/jupiterbak/ayx-node/alerts/)
+[![build-test](https://github.com/jupiterbak/ayx-server-deploy/actions/workflows/test.yml/badge.svg)](https://github.com/jupiterbak/ayx-server-deploy/actions/workflows/test.yml)  [![The MIT License](https://img.shields.io/github/license/jupiterbak/ayx-node)](./LICENSE) [![Total alerts](https://img.shields.io/lgtm/alerts/g/jupiterbak/ayx-node.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/jupiterbak/ayx-node/alerts/)
 [![Language grade: JavaScript](https://img.shields.io/lgtm/grade/javascript/g/jupiterbak/ayx-node.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/jupiterbak/ayx-node/context:javascript)
-[![GitHub release](https://img.shields.io/github/release/jupiterbak/ayx-test-reporter.svg)](https://github.com/jupiterbak/ayx-test-reporter/releases/latest)
+[![GitHub release](https://img.shields.io/github/release/jupiterbak/ayx-server-deploy.svg)](https://github.com/jupiterbak/ayx-server-deploy/releases/latest)
 
 
-This [Github Action](https://github.com/features/actions) displays execute tests (workflows) inside a collection on an Alteryx Server and display test results directly in GitHub.
+This [Github Action](https://github.com/features/actions) deploy a GitHub repository to an Alteryx server.
 
-✔️ List all the worflows of a collection and execute directly on an Alteryx Server.
+✔️ Upload the cotent of the github repository following the folder structure.
 
-✔️ Retrieve the test results in JSON format and creates nice report as Github Check Run
-
-✔️ Highlights workflows where it failed based on message and stack trace captured during test execution
-
-✔️ Retrive outputs of the invidual tests if needed
-
-✔️ Provides final `conclusion` and counts of `passed`, `failed` and `skipped` tests as output parameters
+✔️ Provides final `conclusion` and generate test reports
 
 
-Do you miss something or have an issue? Please create [Issue](https://github.com/jupiterbak/ayx-test-reporter/issues/new) or contribute with PR.
+Do you miss something or have an issue? Please create [Issue](https://github.com/jupiterbak/ayx-server-deploy/issues/new) or contribute with PR.
 
 
 ## Example
@@ -37,25 +31,18 @@ jobs:
     steps:
       - uses: actions/checkout@v2     # checkout the repo
       - name: Test Report
-        uses: jupiterbak/ayx-test-reporter@v1.0.1
+        uses: jupiterbak/ayx-server-deploy@v1.0.1
         with:
-          ayx-server-api-url: 'http://loxcalhost/webapi/'
+          ayx-server-api-url: 'http://localhost/webapi/'
           ayx-server-client-id: '8DA78CE09C0E5D1abf4927846637f9a02e196b8eff52b61f03246ad16ad2c81125ef4a80920db80'
           ayx-server-client-secret: '1f675a0f8d2c572ddd02005a3396fe7e89706fe4a39e0d5f39cf9b6463aecec8'
-          collection-to-test: '00_Data_Ingestion'
+          folder-to-sync: './DATA/'
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v2.2.3
         with:
             path: |
               *.tgz
-              results.json
-      - name: Test Report
-        uses: dorny/test-reporter@v1
-        if: success() || failure()    
-        with:
-          name: Test Results            
-          path: results.json            
-          reporter: mocha-json
+              server-sync-results.json
 ```
 
 > **NOTE:** Please follow these intructions to read the clientId and the clientSecret of your server.
@@ -65,7 +52,7 @@ jobs:
 ## Usage
 
 ```yaml
-- uses: jupiterbak/ayx-test-reporter@v1.0.1
+- uses: jupiterbak/ayx-server-deploy@v1.0.1
   with:
     # URL of the Alteryx server API.
     ayx-server-api-url: 'http://loxcalhost/webapi/'
