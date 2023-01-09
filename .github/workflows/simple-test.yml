@@ -19,7 +19,7 @@ jobs:
           ayx-user-mail: 'jupiter.bakakeu@alteryx.com'
           folder-to-sync: './DATA/'
       - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v3.1.1
+        uses: actions/upload-artifact@v3.1.2
         with:
             path: |
               *.tgz
