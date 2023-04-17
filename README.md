@@ -56,7 +56,7 @@ jobs:
 - uses: jupiterbak/ayx-server-deploy@v1
   with:
     # URL of the Alteryx server API.
-    ayx-server-api-url: 'http://loxcalhost/webapi/'
+    ayx-server-api-url: 'http://localhost/webapi/'
 
     # ClienId used for the Alteryx server API.
     # Reference to the help to get the credentials https://help.alteryx.com/developer-help/server-api-overview
