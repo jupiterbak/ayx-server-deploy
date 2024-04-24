@@ -117,8 +117,8 @@ function main(cClient, wClient, jClient, userClient, userMail, folderToSync) {
                                 ownerId: targetUser.id,
                                 isPublic: false,
                                 isReadyForMigration: false,
-                                othersMayDownload: false,
-                                othersCanExecute: false,
+                                othersMayDownload: true,
+                                othersCanExecute: true,
                                 executionMode: ayx_node_1.SDKModels.UpdateWorkflowContract.ExecutionModeEnum.Standard.toString(),
                                 workflowCredentialType: ayx_node_1.SDKModels.UpdateWorkflowContract.WorkflowCredentialTypeEnum.Default.toString(),
                                 comments: 'uploaded by github action ayx-server-deploy'
@@ -138,14 +138,15 @@ function main(cClient, wClient, jClient, userClient, userMail, folderToSync) {
                                 file: Buffer.from(dummyWorkflowFileBuffer),
                                 name: updatedWorkflow.name,
                                 ownerId: updatedWorkflow.ownerId,
-                                othersMayDownload: false,
-                                othersCanExecute: false,
+                                othersMayDownload: true,
+                                othersCanExecute: true,
                                 makePublished: false,
                                 executionMode: updatedWorkflow.executionMode
                                     ? updatedWorkflow.executionMode.toString()
                                     : ayx_node_1.SDKModels.WorkflowView.ExecutionModeEnum.Standard.toString(),
                                 workflowCredentialType: ayx_node_1.SDKModels.UpdateWorkflowContract.WorkflowCredentialTypeEnum.Default.toString()
                             });
+                            //console.log(_workflow)
                         }
                         // Check that workflow is added into collection
                         const wContaineds = (_b = target_collection.workflowIds) === null || _b === void 0 ? void 0 : _b.filter(col => col === _workflow.id);

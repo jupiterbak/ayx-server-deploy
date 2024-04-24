@@ -151,6 +151,8 @@ export async function main(
               workflowCredentialType:
                 SDKModels.UpdateWorkflowContract.WorkflowCredentialTypeEnum.Default.toString()
             })
+
+            //console.log(_workflow)
           }
 
           // Check that workflow is added into collection
@@ -163,7 +165,6 @@ export async function main(
               workflowId: _workflow.id
             })
           }
-
           resolve({
             collection: [],
             workflows: []

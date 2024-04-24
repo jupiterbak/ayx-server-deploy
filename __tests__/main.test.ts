@@ -47,8 +47,6 @@ test('test main', async () => {
     user_mail,
     folder_to_sync
   )
-
-  console.log(rslt)
 }, 500000)
 
 //shows how the runner will run a javascript action with env / stdout protocol
