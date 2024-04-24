@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2     # checkout the repo
       - name: Test Report
-        uses: jupiterbak/ayx-server-deploy@v3
+        uses: jupiterbak/ayx-server-deploy@v4
         with:
           ayx-server-api-url: 'http://localhost/webapi/'
           ayx-server-client-id: '8DA78CE09C0E5D1abf4927846637f9a02e196b8eff52b61f03246ad16ad2c81125ef4a80920db80'
@@ -53,7 +53,7 @@ jobs:
 ## Usage
 
 ```yaml
-- uses: jupiterbak/ayx-server-deploy@v3
+- uses: jupiterbak/ayx-server-deploy@v4
   with:
     # URL of the Alteryx server API.
     ayx-server-api-url: 'http://localhost/webapi/'
