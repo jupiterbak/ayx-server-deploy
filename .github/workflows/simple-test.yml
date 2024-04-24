@@ -13,9 +13,9 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./
         with:
-          ayx-server-api-url: 'http://ec2-3-66-136-169.eu-central-1.compute.amazonaws.com/webapi/'
-          ayx-server-client-id: '8DA78CE09C0E5D1abf4927846637f9a02e196b8eff52b61f03246ad16ad2c81125ef4a80920db80'
-          ayx-server-client-secret: '1f675a0f8d2c572ddd02005a3396fe7e89706fe4a39e0d5f39cf9b6463aecec8'
+          ayx-server-api-url: 'http://ec2-3-67-26-231.eu-central-1.compute.amazonaws.com/webapi/'
+          ayx-server-client-id: '8DBB320E27953C5bc4d8dc2feb00ebf59c1e5a0e1b84442581723ad92686750d3bf5f91ca860bf9'
+          ayx-server-client-secret: '31ddb8375e186f963770bf81abc53ccfde934fadeda589ed7a77f41111589451'
           ayx-user-mail: 'jupiter.bakakeu@alteryx.com'
           folder-to-sync: './DATA/'
       - name: Upload a Build Artifact
