@@ -118,12 +118,14 @@ export async function main(
               file: Buffer.from(dummyWorkflowFileBuffer),
               name: `${workflowName}`,
               ownerId: targetUser.id,
-              isPublic: true,
-              isReadyForMigration: true,
-              othersMayDownload: true,
-              othersCanExecute: true,
+              isPublic: false,
+              isReadyForMigration: false,
+              othersMayDownload: false,
+              othersCanExecute: false,
               executionMode:
                 SDKModels.UpdateWorkflowContract.ExecutionModeEnum.Standard.toString(),
+              workflowCredentialType:
+                SDKModels.UpdateWorkflowContract.WorkflowCredentialTypeEnum.Default.toString(),
               comments: 'uploaded by github action ayx-server-deploy'
             })
             // Read newly created workflow
@@ -131,20 +133,27 @@ export async function main(
           } else {
             // Workflow already exists, create a new version
             const updatedWorkflow = _workflows[0]
+            const dummyWorkflowFileBuffer = fs.readFileSync(w, {
+              flag: 'r',
+              encoding: null
+            })
             // Create new Version
             _workflow = await wClient.AddVersionToWorkflow(updatedWorkflow.id, {
+              file: Buffer.from(dummyWorkflowFileBuffer),
               name: updatedWorkflow.name,
               ownerId: updatedWorkflow.ownerId,
-              othersMayDownload: true,
-              othersCanExecute: true,
-              makePublished: true,
+              othersMayDownload: false,
+              othersCanExecute: false,
+              makePublished: false,
               executionMode: updatedWorkflow.executionMode
                 ? updatedWorkflow.executionMode.toString()
-                : SDKModels.WorkflowView.ExecutionModeEnum.Standard.toString()
+                : SDKModels.WorkflowView.ExecutionModeEnum.Standard.toString(),
+              workflowCredentialType:
+                SDKModels.UpdateWorkflowContract.WorkflowCredentialTypeEnum.Default.toString()
             })
           }
 
-          // Check that workflow is add into collection
+          // Check that workflow is added into collection
           const wContaineds = target_collection.workflowIds?.filter(
             col => col === _workflow.id
           )
