@@ -120,8 +120,8 @@ export async function main(
               ownerId: targetUser.id,
               isPublic: false,
               isReadyForMigration: false,
-              othersMayDownload: false,
-              othersCanExecute: false,
+              othersMayDownload: true,
+              othersCanExecute: true,
               executionMode:
                 SDKModels.UpdateWorkflowContract.ExecutionModeEnum.Standard.toString(),
               workflowCredentialType:
@@ -142,8 +142,8 @@ export async function main(
               file: Buffer.from(dummyWorkflowFileBuffer),
               name: updatedWorkflow.name,
               ownerId: updatedWorkflow.ownerId,
-              othersMayDownload: false,
-              othersCanExecute: false,
+              othersMayDownload: true,
+              othersCanExecute: true,
               makePublished: false,
               executionMode: updatedWorkflow.executionMode
                 ? updatedWorkflow.executionMode.toString()
