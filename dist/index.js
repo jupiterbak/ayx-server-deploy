@@ -115,10 +115,10 @@ function main(cClient, wClient, jClient, userClient, userMail, folderToSync) {
                                 file: Buffer.from(dummyWorkflowFileBuffer),
                                 name: `${workflowName}`,
                                 ownerId: targetUser.id,
-                                isPublic: true,
-                                isReadyForMigration: true,
-                                othersMayDownload: true,
-                                othersCanExecute: true,
+                                isPublic: false,
+                                isReadyForMigration: false,
+                                othersMayDownload: false,
+                                othersCanExecute: false,
                                 executionMode: ayx_node_1.SDKModels.UpdateWorkflowContract.ExecutionModeEnum.Standard.toString(),
                                 workflowCredentialType: ayx_node_1.SDKModels.UpdateWorkflowContract.WorkflowCredentialTypeEnum.Default.toString(),
                                 comments: 'uploaded by github action ayx-server-deploy'
@@ -138,16 +138,16 @@ function main(cClient, wClient, jClient, userClient, userMail, folderToSync) {
                                 file: Buffer.from(dummyWorkflowFileBuffer),
                                 name: updatedWorkflow.name,
                                 ownerId: updatedWorkflow.ownerId,
-                                othersMayDownload: true,
-                                othersCanExecute: true,
-                                makePublished: true,
+                                othersMayDownload: false,
+                                othersCanExecute: false,
+                                makePublished: false,
                                 executionMode: updatedWorkflow.executionMode
                                     ? updatedWorkflow.executionMode.toString()
                                     : ayx_node_1.SDKModels.WorkflowView.ExecutionModeEnum.Standard.toString(),
-                                workflowCredentialType: ayx_node_1.SDKModels.UpdateWorkflowContract.WorkflowCredentialTypeEnum.Default.toString(),
+                                workflowCredentialType: ayx_node_1.SDKModels.UpdateWorkflowContract.WorkflowCredentialTypeEnum.Default.toString()
                             });
                         }
-                        // Check that workflow is add into collection
+                        // Check that workflow is added into collection
                         const wContaineds = (_b = target_collection.workflowIds) === null || _b === void 0 ? void 0 : _b.filter(col => col === _workflow.id);
                         if ((wContaineds === null || wContaineds === void 0 ? void 0 : wContaineds.length) === 0) {
                             // workflow do not exists in collection, add it
