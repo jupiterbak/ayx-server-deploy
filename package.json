@@ -11,7 +11,7 @@
     "format-check": "prettier --check **/*.ts",
     "lint": "eslint src/**/*.ts",
     "package": "ncc build --source-map --license licenses.txt",
-    "test": "jest --silent",
+    "test": "jest --silent --detectOpenHandles",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm run test",
     "all-no-test": "npm run build && npm run format && npm run lint && npm run package"
   },
